@@ -145,7 +145,7 @@ def generate_html_for_register(reg_name, reg_info):
     reg_desc = f"<span class='reg-addr'>Address: {addr}</span>"
     # optionally add description if available (none in JSON)
     title = f"""
-    <div class="register-title">
+    <div class="register-title" id="reg-{html.escape(reg_name)}">
         <h3>{html.escape(reg_name)}</h3>
         <div class="reg-desc">{reg_desc}</div>
     </div>
