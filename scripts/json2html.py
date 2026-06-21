@@ -8,7 +8,7 @@ Usage: python json2bitmap.py register_map.json > register_map_bitview.html
 import json
 import sys
 import html
-from math import floor, log2
+import os
 
 def get_bit_range(mask: int, shift: int) -> tuple:
     """
@@ -165,90 +165,7 @@ def generate_html_for_register(reg_name, reg_info):
 
 def generate_html(register_map):
     """Full HTML page."""
-    css = """
-    <style>
-        body {
-            font-family: 'Segoe UI', 'Courier New', monospace;
-            margin: 20px;
-            background-color: #f0f0f0;
-        }
-        h1 {
-            color: #2c3e50;
-        }
-        .summary {
-            background: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .register-container {
-            background: white;
-            margin-bottom: 30px;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        .register-title h3 {
-            margin: 0 0 5px 0;
-            color: #2980b9;
-        }
-        .reg-desc {
-            font-size: 0.9em;
-            color: #555;
-            margin-bottom: 10px;
-        }
-        table.bitfield-table {
-            border-collapse: collapse;
-            width: auto;
-            min-width: 100%;
-            font-size: 0.9em;
-        }
-        .bitfield-table th, .bitfield-table td {
-            border: 1px solid #aaa;
-            text-align: center;
-            vertical-align: middle;
-            padding: 4px 2px;
-        }
-        .bit-row th {
-            background-color: #34495e;
-            color: white;
-            font-weight: normal;
-        }
-        .bit-label, .field-label {
-            background-color: #ecf0f1;
-            font-weight: bold;
-            width: 60px;
-        }
-        .field-name-cell {
-            background-color: #d9eaf7;
-            font-weight: bold;
-            font-family: monospace;
-        }
-        .field-type-cell {
-            background-color: #f9e79f;
-        }
-        .field-reset-cell {
-            background-color: #f5cba7;
-        }
-        .bit-num {
-            background-color: #5d6d7e;
-            font-family: monospace;
-        }
-        @media print {
-            body {
-                margin: 0;
-                background: white;
-            }
-            .register-container {
-                break-inside: avoid;
-                box-shadow: none;
-            }
-        }
-    </style>
-    """
+    name = os.path.splitext(os.path.basename(sys.argv[1]))[0].upper()
     regs = register_map.get('registers', {})
     summary = register_map.get('summary', {})
     tables = []
@@ -259,11 +176,11 @@ def generate_html(register_map):
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>MT6320 PMIC Register Bitmap View</title>
-{css}
+    <title>{name} PMIC Register Bitmap View</title>
+    <link href="/assets/datasheet.css" rel="stylesheet" />
 </head>
 <body>
-    <h1>MT6320 PMIC Register Map (Bitfield View)</h1>
+    <h1>{name} PMIC Register Map (Bitfield View)</h1>
     <div class="summary">
         <strong>Summary:</strong> Total registers: {summary.get('total_registers', 0)},
         Total fields with access: {summary.get('total_fields', 0)}<br>

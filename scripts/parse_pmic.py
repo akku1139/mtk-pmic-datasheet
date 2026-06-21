@@ -9,7 +9,7 @@ bitfield definitions, and access functions to produce a JSON register map.
 import re
 import sys
 import json
-from typing import Dict, Any
+from typing import Dict
 
 def parse_hw_header(content: str) -> tuple:
     """

@@ -1,0 +1,94 @@
+body {
+  font-family: 'Segoe UI', 'Courier New', monospace;
+  margin: 20px;
+  background-color: #f0f0f0;
+}
+
+h1 {
+  color: #2c3e50;
+}
+
+.summary {
+  background: #fff;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.register-container {
+  background: white;
+  margin-bottom: 30px;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.register-title h3 {
+  margin: 0 0 5px 0;
+  color: #2980b9;
+}
+
+.reg-desc {
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+table.bitfield-table {
+  border-collapse: collapse;
+  width: auto;
+  min-width: 100%;
+  font-size: 0.9em;
+}
+
+.bitfield-table th, .bitfield-table td {
+  border: 1px solid #aaa;
+  text-align: center;
+  vertical-align: middle;
+  padding: 4px 2px;
+}
+
+.bit-row th {
+  background-color: #34495e;
+  color: white;
+  font-weight: normal;
+}
+
+.bit-label, .field-label {
+  background-color: #ecf0f1;
+  font-weight: bold;
+  width: 60px;
+}
+
+.field-name-cell {
+  background-color: #d9eaf7;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.field-type-cell {
+  background-color: #f9e79f;
+}
+
+.field-reset-cell {
+  background-color: #f5cba7;
+}
+
+.bit-num {
+  background-color: #5d6d7e;
+  font-family: monospace;
+}
+
+@media print {
+  body {
+    margin: 0;
+    background: white;
+  }
+  .register-container {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+}
