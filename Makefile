@@ -78,7 +78,9 @@ $(INDEX_TARGET): $(HTML_TARGETS) | $(DIST_DIR)
 	@for pmic in $(VALID_PMICS); do \
 		echo '<li><a href="regmap/'$$pmic'.html">'$$pmic'</a></li>' >> "$@"; \
 	done
-	@echo '</ul></body></html>' >> "$@"
+	@echo '</ul>' >> "$@"
+	@echo '<p><a href="https://github.com/akku1139/mtk-pmic-datasheet/">Check on GitHub</a></p>' >> "$@"
+	@echo '</body></html>' >> "$@"
 
 # Clean: remove all generated files and index
 clean:
