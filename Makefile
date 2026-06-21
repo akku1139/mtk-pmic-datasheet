@@ -72,6 +72,7 @@ $(INDEX_TARGET): $(HTML_TARGETS) | $(DIST_DIR)
 	@echo 'a { text-decoration: none; color: #2980b9; font-size: 1.1em; }' >> "$@"
 	@echo 'a:hover { text-decoration: underline; }' >> "$@"
 	@echo '</style>' >> "$@"
+	@echo '<meta name="google-site-verification" content="TKJgON1eEKtLb3MaznFUpSRAGmv8QItV_txWuY6VO7M" />' >> "$@"
 	@echo '</head><body>' >> "$@"
 	@echo '<h1>MediaTek PMIC Register Maps</h1>' >> "$@"
 	@echo '<ul>' >> "$@"
