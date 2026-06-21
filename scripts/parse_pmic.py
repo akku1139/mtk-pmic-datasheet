@@ -21,18 +21,37 @@ def parse_hw_header(content: str) -> tuple:
     regs = {}
     field_defs = {}
 
-    # Register definitions: #define NAME 0xXXXX
-    reg_pattern = re.compile(r'^\s*#define\s+([A-Z0-9_]+)\s+(0x[0-9A-Fa-f]+)\s*$', re.MULTILINE)
+    # 登録されたマクロとその数値を一時的に保持する辞書（ベースアドレス解決用）
+    macro_map = {}
+
+    # レジスタ定義: #define NAME VALUE (キャストやカッコ、末尾コメントを考慮して幅広くマッチ)
+    reg_pattern = re.compile(r'^\s*#define\s+([A-Z0-9_]+)\s+(.+?)\s*(?://.*)?$', re.MULTILINE)
+
     for match in reg_pattern.finditer(content):
         name = match.group(1)
-        addr_str = match.group(2)
-        # Skip register names that are actually bitfield masks/shifts (they contain MASK/SHIFT)
+        value_str = match.group(2).strip()
+
+        # マスクやシフトの定義はここではスキップ
         if '_MASK' in name or '_SHIFT' in name:
             continue
-        addr = int(addr_str, 16)
-        regs[name] = addr
 
-    # Mask and shift definitions
+        # 1) 値の文字列から16進数（0xXXXX）をすべて抽出して数値化
+        hex_values = [int(x, 16) for x in re.findall(r'0x[0-9A-Fa-f]+', value_str)]
+
+        # 2) 既に解析済みのマクロ（PMIC_REG_BASEなど）が値に含まれているか確認
+        base_val = 0
+        for m_name, m_val in macro_map.items():
+            if m_name in value_str:
+                base_val = m_val
+                break
+
+        # 3) ベースアドレスと抽出したオフセット値を足し合わせる
+        if hex_values:
+            actual_val = base_val + sum(hex_values)
+            regs[name] = actual_val
+            macro_map[name] = actual_val  # 次の行以降でマクロとして使われる可能性に備える
+
+    # Mask and shift definitions (従来通り)
     mask_pattern = re.compile(r'^\s*#define\s+([A-Z0-9_]+)_MASK\s+(0x[0-9A-Fa-f]+)\s*$', re.MULTILINE)
     shift_pattern = re.compile(r'^\s*#define\s+([A-Z0-9_]+)_SHIFT\s+(\d+)\s*$', re.MULTILINE)
 
@@ -50,7 +69,6 @@ def parse_hw_header(content: str) -> tuple:
         if base in masks:
             field_defs[base] = {'mask': masks[base], 'shift': shift_val}
         else:
-            # shift without corresponding mask? still store, mask unknown
             field_defs[base] = {'mask': None, 'shift': shift_val}
 
     return regs, field_defs
@@ -63,24 +81,25 @@ def parse_c_source(content: str, regs: Dict, field_defs: Dict) -> Dict:
     """
     access_map = {}
 
-    # Helper to extract macro name from (U32)(MACRO) pattern
-    def extract_macro(text, pos):
-        # Simple: look for word characters after last '('
-        match = re.search(r'\(U32\)\s*\((\w+)\)', text[pos:])
-        if match:
-            return match.group(1), match.end()
-        return None, pos
+    # キャストの型（U32 や kal_uint32 など）を柔軟にマッチさせるための正規表現パーツ
+    # 例: (U32) や (kal_uint32) にマッチ
+    cast_pattern = r'\([\w\s]+\)'
 
-    # Pattern to find function calls (simplified: find lines with pmic_read_interface or pmic_config_interface)
-    # We'll use regex to capture register macro, mask macro, shift macro.
-    # For read: pmic_read_interface( (U32)(REG), (&val), (U32)(MASK), (U32)(SHIFT) )
+    # For read: pmic_read_interface( (型)(REG), (&val), (型)(MASK), (型)(SHIFT) )
     read_pattern = re.compile(
-        r'pmic_read_interface\s*\(\s*\(U32\)\s*\((\w+)\)\s*,\s*\(&\w+\)\s*,\s*\(U32\)\s*\((\w+)\)\s*,\s*\(U32\)\s*\((\w+)\)\s*\)',
+        r'pmic_read_interface\s*\(\s*' + cast_pattern + r'\s*\((\w+)\)\s*,\s*'
+        r'\(&\w+\)\s*,\s*'
+        + cast_pattern + r'\s*\((\w+)\)\s*,\s*'
+        + cast_pattern + r'\s*\((\w+)\)\s*\)',
         re.DOTALL
     )
-    # For write: pmic_config_interface( (U32)(REG), (U32)(val), (U32)(MASK), (U32)(SHIFT) )
+
+    # For write: pmic_config_interface( (型)(REG), (型)(val), (型)(MASK), (型)(SHIFT) )
     write_pattern = re.compile(
-        r'pmic_config_interface\s*\(\s*\(U32\)\s*\((\w+)\)\s*,\s*\(U32\)[^,]+,\s*\(U32\)\s*\((\w+)\)\s*,\s*\(U32\)\s*\((\w+)\)\s*\)',
+        r'pmic_config_interface\s*\(\s*' + cast_pattern + r'\s*\((\w+)\)\s*,\s*'
+        + cast_pattern + r'[^,]+,\s*'
+        + cast_pattern + r'\s*\((\w+)\)\s*,\s*'
+        + cast_pattern + r'\s*\((\w+)\)\s*\)',
         re.DOTALL
     )
 
@@ -105,16 +124,12 @@ def parse_c_source(content: str, regs: Dict, field_defs: Dict) -> Dict:
         if field_base in field_defs:
             mask_val = field_defs[field_base].get('mask')
             shift_val = field_defs[field_base].get('shift')
-        else:
-            # Try to get shift from shift_macro directly if it ends with _SHIFT
-            if shift_macro.endswith('_SHIFT') and shift_macro[:-6] == field_base:
-                # field_defs might have missing, we can try to parse later, but here we skip
-                pass
 
         reg_name = reg_macro
         if reg_name not in access_map:
             access_map[reg_name] = {}
         field_info = access_map[reg_name].get(field_base, {'mask': mask_val, 'shift': shift_val, 'access': ''})
+
         # Update access type
         if 'read' not in field_info['access']:
             field_info['access'] += 'read'
@@ -138,8 +153,10 @@ def parse_c_source(content: str, regs: Dict, field_defs: Dict) -> Dict:
         if reg_name not in access_map:
             access_map[reg_name] = {}
         field_info = access_map[reg_name].get(field_base, {'mask': None, 'shift': None, 'access': ''})
+
         if 'write' not in field_info['access']:
             field_info['access'] += 'write'
+
         # Update mask/shift if not already set
         if field_info['mask'] is None and field_base in field_defs:
             field_info['mask'] = field_defs[field_base].get('mask')
