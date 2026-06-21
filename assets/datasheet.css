@@ -24,6 +24,7 @@ h1 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   break-inside: avoid;
   page-break-inside: avoid;
+  overflow-x: auto;
 }
 
 .register-title h3 {
@@ -39,9 +40,10 @@ h1 {
 
 table.bitfield-table {
   border-collapse: collapse;
-  width: auto;
-  min-width: 100%;
+  width: 100%;
+  table-layout: fixed;
   font-size: 0.9em;
+  word-break: break-all;
 }
 
 .bitfield-table th, .bitfield-table td {
@@ -90,5 +92,9 @@ table.bitfield-table {
   .register-container {
     break-inside: avoid;
     box-shadow: none;
+    overflow-x: visible;
+  }
+  table.bitfield-table {
+    table-layout: auto;
   }
 }
